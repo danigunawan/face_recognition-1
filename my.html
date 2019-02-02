@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en-US">
+
+<head>
+  <script src="face-api.js"></script>
+  <script src="js/drawing.js"></script>
+  <script src="js/faceDetectionControls.js"></script>
+  <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>
+</head>
+
+<body>
+<div style="position: relative" class="margin">
+  <video onplay="onPlay(this)" id="inputVideo" autoplay muted></video>
+  <canvas id="overlay" style='position: absolute;top: 0;left: 0;'/>
+</div>
+</body>
+  <script type="text/javascript">
+
+    async function onPlay() {
+  	  // run face detection & recognition
+
+      // configure SSD detection parameters
+
+      const options = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 })
+      const videoEl = $('#inputVideo').get(0)
+      const canvas = $('#overlay').get(0)
+
+
+      if(videoEl.paused || videoEl.ended || !isFaceDetectionModelLoaded())
+        return setTimeout(() => onPlay())
+/*     
+      // Face Detection 
+      //const mtcnnForwardParams = {
+        // limiting the search space to larger faces for webcam detection
+      //  minFaceSize: 20
+      //}
+
+      //const mtcnnResults = await faceapi.mtcnn(videoEl, mtcnnForwardParams)
+
+      const result = await faceapi.detectSingleFace(videoEl, options)
+
+      // draw the results onto our overlay
+
+      if (result) {
+        drawDetections(videoEl, $('#overlay').get(0), [result])
+      }
+*/
+
+      // Face Recognization
+      // compute reference image
+      const labels = ['Haoqing', 'Rui']
+
+      const labeledFaceDescriptors = await Promise.all(
+        labels.map(async label => {
+          // fetch image data from urls and convert blob to HTMLImage element
+          const imgUrl = `/img/${label}.jpg`
+          const img = await faceapi.fetchImage(imgUrl)
+          
+          // detect the face with the highest score in the image and compute it's landmarks and face descriptor
+          const fullFaceDescription = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor()
+          
+          if (!fullFaceDescription) {
+            throw new Error(`no faces detected for ${label}`)
+          }
+          
+          const faceDescriptors = [fullFaceDescription.descriptor]
+          return new faceapi.LabeledFaceDescriptors(label, faceDescriptors)
+        })
+      )
+
+      // 0.6 is a good distance threshold value to judge
+      // whether the descriptors match or not
+      // create FaceMatcher with automatically assigned labels
+      // from the detection results for the reference image
+      const maxDescriptorDistance = 0.6
+      const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, maxDescriptorDistance)
+
+      // single face detection
+       const results = await faceapi.detectSingleFace(videoEl, options).withFaceLandmarks().withFaceDescriptor()
+
+      // all faces detection
+      // const results = await faceapi.detectAllFaces(videoEl, options).withFaceLandmarks().withFaceDescriptors()
+
+
+      if (results) {
+        resizedResults = resizeCanvasAndResults(videoEl, canvas, [results])
+
+        // draw boxes with the corresponding label as text
+        const boxesWithText = resizedResults.map(({ detection, descriptor }) =>
+          new faceapi.BoxWithText(
+            detection.box,
+            // match each face descriptor to the reference descriptor
+            // with lowest euclidean distance and display the result as text
+            faceMatcher.findBestMatch(descriptor).toString()
+          )
+        )
+
+
+        faceapi.drawDetection(canvas, boxesWithText)
+      }
+      
+
+      setTimeout(() => onPlay())
+    }
+
+    async function run() {
+      // load the models
+      const MODEL_URL = '/weights'
+
+      // SSDMobileNet
+      await faceapi.loadSsdMobilenetv1Model(MODEL_URL)
+      await faceapi.loadFaceLandmarkModel(MODEL_URL)
+      await faceapi.loadFaceRecognitionModel(MODEL_URL)
+
+      // try to access users webcam and stream the images
+      // to the video element
+      const stream = await navigator.mediaDevices.getUserMedia({ video: {} })
+      const videoEl = $('#inputVideo').get(0)
+      videoEl.srcObject = stream
+    }
+
+    function updateResults() {}
+
+    $(document).ready(function() {
+      run()
+    })
+
+  </script>
+</html>
