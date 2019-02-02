@@ -54,7 +54,7 @@
       const labeledFaceDescriptors = await Promise.all(
         labels.map(async label => {
           // fetch image data from urls and convert blob to HTMLImage element
-          const imgUrl = `/img/${label}.jpg`
+          const imgUrl = `img/${label}.jpg`
           const img = await faceapi.fetchImage(imgUrl)
           
           // detect the face with the highest score in the image and compute it's landmarks and face descriptor
@@ -106,7 +106,7 @@
 
     async function run() {
       // load the models
-      const MODEL_URL = '/weights'
+      const MODEL_URL = 'weights'
 
       // SSDMobileNet
       await faceapi.loadSsdMobilenetv1Model(MODEL_URL)
