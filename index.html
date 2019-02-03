@@ -7,28 +7,26 @@
   <script src="js/faceDetectionControls.js"></script>
   <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-<div style="position: relative" class="margin">
-  <video onplay="onPlay(this)" id="inputVideo" autoplay muted></video>
-  <canvas id="overlay" style='position: absolute;top: 0;left: 0;'/>
-</div>
+  <div class="margin">
+    <video onplay="onPlay(this)" id="inputVideo" autoplay muted></video>
+    <canvas id="overlay"></canvas>
+    <div id="loginMessage"><h1></h1></div>
+  </div>
 </body>
   <script type="text/javascript">
 
     async function onPlay() {
   	  // run face detection & recognition
-
-      // configure SSD detection parameters
-
-      const options = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 })
       const videoEl = $('#inputVideo').get(0)
-      const canvas = $('#overlay').get(0)
-
-
       if(videoEl.paused || videoEl.ended || !isFaceDetectionModelLoaded())
         return setTimeout(() => onPlay())
+
+      // configure SSD detection parameters
+      const options = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 })
 /*     
       // Face Detection 
       //const mtcnnForwardParams = {
@@ -68,46 +66,12 @@
           return new faceapi.LabeledFaceDescriptors(label, faceDescriptors)
         })
       )
-
-      // 0.6 is a good distance threshold value to judge
-      // whether the descriptors match or not
-      // create FaceMatcher with automatically assigned labels
-      // from the detection results for the reference image
-      const maxDescriptorDistance = 0.6
-      const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, maxDescriptorDistance)
-
-      // single face detection
-       const results = await faceapi.detectSingleFace(videoEl, options).withFaceLandmarks().withFaceDescriptor()
-
-      // all faces detection
-      // const results = await faceapi.detectAllFaces(videoEl, options).withFaceLandmarks().withFaceDescriptors()
-
-
-      if (results) {
-        resizedResults = resizeCanvasAndResults(videoEl, canvas, [results])
-
-        // draw boxes with the corresponding label as text
-        const boxesWithText = resizedResults.map(({ detection, descriptor }) =>
-          new faceapi.BoxWithText(
-            detection.box,
-            // match each face descriptor to the reference descriptor
-            // with lowest euclidean distance and display the result as text
-            faceMatcher.findBestMatch(descriptor).toString()
-          )
-        )
-
-
-        faceapi.drawDetection(canvas, boxesWithText)
-      }
-      
-
-      setTimeout(() => onPlay())
+      updateResults(labeledFaceDescriptors, options)
     }
 
     async function run() {
       // load the models
       const MODEL_URL = 'weights'
-
       // SSDMobileNet
       await faceapi.loadSsdMobilenetv1Model(MODEL_URL)
       await faceapi.loadFaceLandmarkModel(MODEL_URL)
@@ -120,7 +84,50 @@
       videoEl.srcObject = stream
     }
 
-    function updateResults() {}
+    async function updateResults(labeledFaceDescriptors, options, lastPerson) {
+
+      // 0.6 is a good distance threshold value to judge
+      // whether the descriptors match or not
+      // create FaceMatcher with automatically assigned labels
+      // from the detection results for the reference image
+      const videoEl = $('#inputVideo').get(0)
+      const canvas = $('#overlay').get(0)
+
+      const maxDescriptorDistance = 0.6
+      const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, maxDescriptorDistance)
+
+      // single face detection
+       const results = await faceapi.detectSingleFace(videoEl, options).withFaceLandmarks().withFaceDescriptor()
+
+      // all faces detection
+      // const results = await faceapi.detectAllFaces(videoEl, options).withFaceLandmarks().withFaceDescriptors()
+      if (results) {
+        const bestMatch = faceMatcher.findBestMatch(results.descriptor)
+        var name =  bestMatch._label
+
+        resizedResults = resizeCanvasAndResults(videoEl, canvas, [results])
+
+        // draw boxes with the corresponding label as text
+        const boxesWithText = resizedResults.map(({ detection, descriptor }) =>
+          new faceapi.BoxWithText(
+            detection.box,
+            // match each face descriptor to the reference descriptor
+            // with lowest euclidean distance and display the result as text
+            faceMatcher.findBestMatch(descriptor).toString()
+          )
+        )
+        faceapi.drawDetection(canvas, boxesWithText)
+
+        if ( name != 'unknown' && name != lastPerson) {
+          $('#loginMessage > h1').text("Hello " + name + ". Welcome!")
+          $('#loginMessage').show()
+          // hide login message in 2 seconds
+          setTimeout(() => $('#loginMessage').hide( ), 2000)
+
+        }
+      }
+      setTimeout(() => updateResults(labeledFaceDescriptors, options, name))
+    }
 
     $(document).ready(function() {
       run()
