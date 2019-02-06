@@ -25,7 +25,6 @@
       if(videoEl.paused || videoEl.ended){
         return setTimeout(() => onPlay());
       }
-        
 
       // configure SSD detection parameters
       // const options = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 })
@@ -58,7 +57,6 @@
       // from the detection results for the reference image
       const maxDescriptorDistance = 0.6;
       const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, maxDescriptorDistance);
-
       updateResults(faceMatcher,options);
     }
 
@@ -70,8 +68,6 @@
       //await faceapi.loadFaceLandmarkModel(MODEL_URL)
 
       // tiny face detector
-      //const net = new faceapi.tinyFaceDetector()
-      //net.load(await faceapi.fetchNetWeights(MODEL_URL))
       await faceapi.loadTinyFaceDetectorModel(MODEL_URL);
       await faceapi.loadFaceLandmarkModel(MODEL_URL)
       await faceapi.loadFaceRecognitionModel(MODEL_URL)
@@ -110,7 +106,7 @@
         );
         faceapi.drawDetection(canvas, boxesWithText);
 
-        if (name != 'unknown' && name != lastPerson && name != 'undefined'){
+        if (name != 'unknown' && name != lastPerson){
           $('#loginMessage > h1').text("Welcome Back! " + name );
           $('#loginMessage').show();
           // hide login message in 2 seconds
