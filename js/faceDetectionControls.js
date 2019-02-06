@@ -74,15 +74,12 @@ function onDecreaseMinFaceSize() {
 
 function getCurrentFaceDetectionNet() {
   if (selectedFaceDetector === SSD_MOBILENETV1) {
-    console.log('SSD_MOBILENETV1')
     return faceapi.nets.ssdMobilenetv1
   }
   if (selectedFaceDetector === TINY_FACE_DETECTOR) {
-    console.log('tinyFaceDetector')
     return faceapi.nets.tinyFaceDetector
   }
   if (selectedFaceDetector === MTCNN) {
-    console.log('MTCNN')
     return faceapi.nets.mtcnn
   }
 }
