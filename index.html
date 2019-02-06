@@ -22,32 +22,18 @@
     async function onPlay() {
   	  // run face detection & recognition
       const videoEl = $('#inputVideo').get(0)
-      if(videoEl.paused || videoEl.ended || !isFaceDetectionModelLoaded())
-        return setTimeout(() => onPlay())
+      if(videoEl.paused || videoEl.ended){
+        return setTimeout(() => onPlay());
+      }
+        
 
       // configure SSD detection parameters
-      const options = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 })
-/*     
-      // Face Detection 
-      //const mtcnnForwardParams = {
-        // limiting the search space to larger faces for webcam detection
-      //  minFaceSize: 20
-      //}
+      // const options = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 })
+      // configure tiny face detectir
+      const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 320})
 
-      //const mtcnnResults = await faceapi.mtcnn(videoEl, mtcnnForwardParams)
-
-      const result = await faceapi.detectSingleFace(videoEl, options)
-
-      // draw the results onto our overlay
-
-      if (result) {
-        drawDetections(videoEl, $('#overlay').get(0), [result])
-      }
-*/
-
-      // Face Recognization
       // compute reference image
-      const labels = ['Haoqing', 'Rui']
+      const labels = ['Haoqing', 'Rui'];
 
       const labeledFaceDescriptors = await Promise.all(
         labels.map(async label => {
@@ -56,7 +42,7 @@
           const img = await faceapi.fetchImage(imgUrl)
           
           // detect the face with the highest score in the image and compute it's landmarks and face descriptor
-          const fullFaceDescription = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor()
+          const fullFaceDescription = await faceapi.detectSingleFace(img, options).withFaceLandmarks().withFaceDescriptor()
           
           if (!fullFaceDescription) {
             throw new Error(`no faces detected for ${label}`)
@@ -66,46 +52,52 @@
           return new faceapi.LabeledFaceDescriptors(label, faceDescriptors)
         })
       )
-      updateResults(labeledFaceDescriptors, options)
+      // 0.6 is a good distance threshold value to judge
+      // whether the descriptors match or not
+      // create FaceMatcher with automatically assigned labels
+      // from the detection results for the reference image
+      const maxDescriptorDistance = 0.6;
+      const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, maxDescriptorDistance);
+
+      updateResults(faceMatcher,options);
     }
 
     async function run() {
       // load the models
-      const MODEL_URL = 'weights'
+      const MODEL_URL = 'weights';
       // SSDMobileNet
-      await faceapi.loadSsdMobilenetv1Model(MODEL_URL)
+      //await faceapi.loadSsdMobilenetv1Model(MODEL_URL) 
+      //await faceapi.loadFaceLandmarkModel(MODEL_URL)
+
+      // tiny face detector
+      //const net = new faceapi.tinyFaceDetector()
+      //net.load(await faceapi.fetchNetWeights(MODEL_URL))
+      await faceapi.loadTinyFaceDetectorModel(MODEL_URL);
       await faceapi.loadFaceLandmarkModel(MODEL_URL)
       await faceapi.loadFaceRecognitionModel(MODEL_URL)
 
       // try to access users webcam and stream the images
       // to the video element
-      const stream = await navigator.mediaDevices.getUserMedia({ video: {} })
-      const videoEl = $('#inputVideo').get(0)
-      videoEl.srcObject = stream
+      const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
+      const videoEl = $('#inputVideo').get(0);
+      videoEl.srcObject = stream;
     }
 
-    async function updateResults(labeledFaceDescriptors, options, lastPerson) {
+    async function updateResults(faceMatcher, options, lastPerson) {
 
-      // 0.6 is a good distance threshold value to judge
-      // whether the descriptors match or not
-      // create FaceMatcher with automatically assigned labels
-      // from the detection results for the reference image
-      const videoEl = $('#inputVideo').get(0)
-      const canvas = $('#overlay').get(0)
-
-      const maxDescriptorDistance = 0.6
-      const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, maxDescriptorDistance)
+      const videoEl = $('#inputVideo').get(0);
+      const canvas = $('#overlay').get(0);
 
       // single face detection
-       const results = await faceapi.detectSingleFace(videoEl, options).withFaceLandmarks().withFaceDescriptor()
+      const results = await faceapi.detectSingleFace(videoEl, options).withFaceLandmarks().withFaceDescriptor();
 
       // all faces detection
       // const results = await faceapi.detectAllFaces(videoEl, options).withFaceLandmarks().withFaceDescriptors()
       if (results) {
-        const bestMatch = faceMatcher.findBestMatch(results.descriptor)
-        var name =  bestMatch._label
+        const bestMatch = faceMatcher.findBestMatch(results.descriptor);
+        var name =  bestMatch._label;
 
-        resizedResults = resizeCanvasAndResults(videoEl, canvas, [results])
+        resizedResults = resizeCanvasAndResults(videoEl, canvas, [results]);
 
         // draw boxes with the corresponding label as text
         const boxesWithText = resizedResults.map(({ detection, descriptor }) =>
@@ -115,18 +107,17 @@
             // with lowest euclidean distance and display the result as text
             faceMatcher.findBestMatch(descriptor).toString()
           )
-        )
-        faceapi.drawDetection(canvas, boxesWithText)
+        );
+        faceapi.drawDetection(canvas, boxesWithText);
 
-        if ( name != 'unknown' && name != lastPerson) {
-          $('#loginMessage > h1').text("Hello " + name + ". Welcome!")
-          $('#loginMessage').show()
+        if (name != 'unknown' && name != lastPerson && name != 'undefined'){
+          $('#loginMessage > h1').text("Welcome Back! " + name );
+          $('#loginMessage').show();
           // hide login message in 2 seconds
-          setTimeout(() => $('#loginMessage').hide( ), 2000)
-
+          setTimeout(() => $('#loginMessage').hide( ), 2000);
         }
       }
-      setTimeout(() => updateResults(labeledFaceDescriptors, options, name))
+      setTimeout(() => updateResults(faceMatcher, options, name));
     }
 
     $(document).ready(function() {
