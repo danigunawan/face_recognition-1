@@ -93,6 +93,9 @@
         const bestMatch = faceMatcher.findBestMatch(results.descriptor);
         var name =  bestMatch._label;
 
+        // draw box on convas
+
+        /*
         resizedResults = resizeCanvasAndResults(videoEl, canvas, [results]);
 
         // draw boxes with the corresponding label as text
@@ -105,6 +108,7 @@
           )
         );
         faceapi.drawDetection(canvas, boxesWithText);
+        */
 
         if (name != 'unknown' && name != lastPerson){
           $('#loginMessage > h1').text("Welcome Back! " + name );
@@ -113,7 +117,7 @@
           setTimeout(() => $('#loginMessage').hide( ), 2000);
         }
       }
-      setTimeout(() => updateResults(faceMatcher, options, name));
+      setTimeout(() => updateResults(faceMatcher, options, name), 1000);
     }
 
     $(document).ready(function() {
