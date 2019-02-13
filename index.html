@@ -14,13 +14,12 @@
   <div class="margin">
     <video onplay="onPlay(this)" id="inputVideo" autoplay muted></video>
     <canvas id="overlay"></canvas>
-    <div id="loginMessage"><h1></h1></div>
   </div>
 </body>
   <script type="text/javascript">
 
     async function onPlay() {
-  	  // run face detection & recognition
+      // run face detection & recognition
       const videoEl = $('#inputVideo').get(0)
       if(videoEl.paused || videoEl.ended){
         return setTimeout(() => onPlay());
@@ -38,8 +37,18 @@
         labels.map(async label => {
           // fetch image data from urls and convert blob to HTMLImage element
           const imgUrl = `img/${label}.jpg`
+
           const img = await faceapi.fetchImage(imgUrl)
-          
+          /*
+          var img;
+          var json = $.getJSON("img_data.json",function(jsondata) {
+            img = faceapi.bufferToImage("data:image/jpg;base64,".concat(jsondata[label]))
+            console.log(img)
+            console.log(typeof(img))
+          });
+
+          console.log(img)
+          */
           // detect the face with the highest score in the image and compute it's landmarks and face descriptor
           const fullFaceDescription = await faceapi.detectSingleFace(img, options).withFaceLandmarks().withFaceDescriptor()
           
@@ -51,6 +60,7 @@
           return new faceapi.LabeledFaceDescriptors(label, faceDescriptors)
         })
       )
+
       // 0.6 is a good distance threshold value to judge
       // whether the descriptors match or not
       // create FaceMatcher with automatically assigned labels
@@ -58,8 +68,9 @@
       const maxDescriptorDistance = 0.6;
       const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, maxDescriptorDistance);
       updateResults(faceMatcher,options);
-    }
 
+    }
+  	  
     async function run() {
       // load the models
       const MODEL_URL = 'weights';
@@ -111,14 +122,24 @@
         */
 
         if (name != 'unknown' && name != lastPerson){
+          /*
           $('#loginMessage > h1').text("Welcome Back! " + name );
           $('#loginMessage').show();
           // hide login message in 2 seconds
           setTimeout(() => $('#loginMessage').hide( ), 2000);
+          */
+          var reply = confirm("Welcome Back! " + name);
+          if (reply) {
+            console.log('you can go inside now')
+          }
+          else {
+            console.log('mistake detection')
+          }
         }
       }
       setTimeout(() => updateResults(faceMatcher, options, name), 1000);
     }
+
 
     $(document).ready(function() {
       run()
