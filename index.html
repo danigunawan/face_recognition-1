@@ -110,31 +110,32 @@
       if (results) {
         const bestMatch = faceMatcher.findBestMatch(results.descriptor);
         var name =  bestMatch._label;
-
-        // draw box on convas
-
-        /*
-        resizedResults = resizeCanvasAndResults(videoEl, canvas, [results]);
-
-        // draw boxes with the corresponding label as text
-        const boxesWithText = resizedResults.map(({ detection, descriptor }) =>
-          new faceapi.BoxWithText(
-            detection.box,
-            // match each face descriptor to the reference descriptor
-            // with lowest euclidean distance and display the result as text
-            faceMatcher.findBestMatch(descriptor).toString()
-          )
-        );
-        faceapi.drawDetection(canvas, boxesWithText);
-        */
+        
 
         if (name != 'unknown' && name != lastPerson){
           
           $('#message').text("Welcome Back! " + name );
           $('#popup').show();
 
+          // draw box on convas
+
+          
+          resizedResults = resizeCanvasAndResults(videoEl, canvas, [results]);
+
+          // draw boxes with the corresponding label as text
+          const boxesWithText = resizedResults.map(({ detection, descriptor }) =>
+            new faceapi.BoxWithText(
+              detection.box,
+              // match each face descriptor to the reference descriptor
+              // with lowest euclidean distance and display the result as text
+              //faceMatcher.findBestMatch(descriptor).toString()
+            )
+          );
+          faceapi.drawDetection(canvas, boxesWithText);
+
           // hide poppu message in 3 seconds
           setTimeout(() => $('#popup').hide( ), 3000);
+          setTimeout(() => canvas.width = canvas.width, 3000)
           
         }
       }
