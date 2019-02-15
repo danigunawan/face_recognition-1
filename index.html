@@ -143,7 +143,20 @@
     }
 
     function saveLogin() {
-      console.log('successfully written in database.')
+      var API_URL = 'https://uncxy3iqd1.execute-api.us-east-1.amazonaws.com/prod/doorkey'
+      $.ajax({
+        type: 'POST',
+        url: API_URL,
+        headers: {  'Access-Control-Allow-Headers': 'Content-Type'},
+        data: {'name': 'Rui'},
+        dataType: 'json',
+        success: function() {
+          console.log('successfully written in database')
+        },
+        error: function() {
+          console.log('failed!')
+        } 
+      });
       $('#popup').hide( )
     }
 
